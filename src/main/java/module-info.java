@@ -13,6 +13,11 @@ module network.brightspots.rcv {
   requires org.apache.poi.ooxml;
   requires commons.cli;
   requires java.xml.crypto;
+  requires spring.boot.autoconfigure;
+  requires spring.context;
+  requires spring.beans;
+  requires spring.core;
+  requires spring.boot;
   // enable reflexive calls from network.brightspots.rcv into javafx.fxml
   opens network.brightspots.rcv;
   // our main module
