@@ -18,6 +18,7 @@ module network.brightspots.rcv {
   requires spring.beans;
   requires spring.core;
   requires spring.boot;
+  requires spring.web;
   // enable reflexive calls from network.brightspots.rcv into javafx.fxml
   opens network.brightspots.rcv;
   // our main module
