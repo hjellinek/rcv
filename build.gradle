@@ -242,6 +242,7 @@ tasks.jlink.doLast {
     }
 }
 
-bootRun {
-    mainClassName = 'network.brightspots.rcv.web.WebApplication'
+bootJar {
+    mainClass = 'network.brightspots.rcv.WebApplication'
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
 }
