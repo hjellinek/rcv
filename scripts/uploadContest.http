@@ -1,0 +1,50 @@
+### Upload Minneapolis mayor 2013 config
+POST http://localhost:8080/{{api}}/newContest?contestName=2013_minneapolis_mayor
+Content-Type: application/json
+Accept: application/json
+
+< ../src/test/resources/network/brightspots/rcv/test_data/2013_minneapolis_mayor/2013_minneapolis_mayor_config.json
+
+> {%
+    client.log("contestId = "+response.body.contestId);
+    client.global.set("contestId", response.body.contestId);
+%}
+
+### Upload FAKE chunk 0
+
+POST http://localhost:8080/{{api}}/castVotes?contestId={{contestId}}&chunk=0
+Content-Type: application/octet-stream
+Accept: application/json
+
+contents 0 line 0
+contents 0 line 1
+
+### Upload FAKE chunk 1
+
+POST http://localhost:8080/{{api}}/castVotes?contestId={{contestId}}&chunk=1
+Content-Type: application/octet-stream
+Accept: application/json
+
+contents 1 line 0
+contents 1 line 1
+
+### Upload REAL data - chunk 0
+
+POST http://localhost:8080/{{api}}/castVotes?contestId={{contestId}}&chunk=0
+Content-Type: application/octet-stream
+Accept: application/json
+
+< ../src/test/resources/network/brightspots/rcv/test_data/2013_minneapolis_mayor/2013_minneapolis_mayor_cvr.xlsx
+
+### Tabulate
+GET http://localhost:8080/{{api}}/tabulate?
+    contestId={{contestId}}&
+    name=Herb%20Jellinek
+Accept: application/json
+
+### Clean up
+
+GET http://localhost:8080/{{api}}/clear?contestId={{contestId}}
+Accept: application/json
+
+###
