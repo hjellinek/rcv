@@ -1,6 +1,0 @@
-### Minneapolis mayor 2013
-GET http://localhost:8080/{{api}}/tabulate?
-    path=/tmp/2013_minneapolis_mayor/2013_minneapolis_mayor_config.json&
-    name=Herb%20Jellinek
-Accept: application/json
-
