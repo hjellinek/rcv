@@ -47,4 +47,9 @@ Accept: application/json
 GET http://localhost:8080/{{api}}/clear?contestId={{contestId}}
 Accept: application/json
 
+### Get the app version
+
+GET http://localhost:8080/{{api}}/appVersion
+Accept: text/plain
+
 ###

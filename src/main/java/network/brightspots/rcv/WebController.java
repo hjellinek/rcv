@@ -33,11 +33,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Ranked-choice voting Web API.  Call in this sequence:
+ * Ranked-choice voting Web API.  Call the endpoints in this sequence:
  * <ol>
- *   <li><tt>newContest</tt>: start a new contest. Requires a config parameter, returns unique contest ID.
- *   <li><tt>castVotes</tt>: accept a chunk of Cast Vote Records - can run this 1 or more times. Returns sequence number
- *   for next call.
+ *   <li><tt>newContest</tt>: start a new contest. Requires a config parameter, returns a unique contest ID.
+ *   <li><tt>castVotes</tt>: accept a chunk of Cast Vote Records - can run this 1 or more times. Requires a contest ID
+ *   and sequence number.  Returns the sequence number expected for the next call.
  *   <li><tt>tabulate</tt>: tabulate a contest. Requires operator name and contest ID.  Returns the contest results.
  *   <li><tt>clear</tt>: erase all records of a contest from memory and disk.
  * </ol>
@@ -55,10 +55,19 @@ public class WebController {
   @Autowired
   private Environment env;
 
+  /**
+   * Where all the contest data files will be written and read from.
+   */
   private File rootContestDir;
 
+  /**
+   * Use this to serialize/deserialize JSON or other external formats.
+   */
   private final ObjectMapper objectMapper = new ObjectMapper();
 
+  /**
+   * Keep track of active contests by mapping from the contest ID to {@link ContestState}.
+   */
   private final Map<UUID, ContestState> contestMap = new ConcurrentHashMap<>();
 
   public WebController() {
@@ -81,23 +90,12 @@ public class WebController {
   }
 
   /**
-   * Convert to CDF using the config file at the given path.
-   *
-   * @param configPath the path to the config file
-   */
-  @RequestMapping(value = "convertToCdf", method = RequestMethod.GET)
-  public void convertToCdf(@RequestParam("path") String configPath) {
-    final TabulatorSession session = new TabulatorSession(configPath);
-    session.convertToCdf();
-  }
-
-  /**
    * Begin a new contest by uploading a configuration.  We copy the config file to a
-   * temp directory.  We create a {@link ContestState} and store the directory name in it
+   * temp directory.  We create a {@link ContestState}, store the directory name in it,
    * and add it to {@link #contestMap} with a new random UUID.  We return the UUID.
    *
    * @param contestConfig the configuration
-   * @return the UUID and next upload chunk number
+   * @return the UUID and expected next upload chunk number
    */
   @RequestMapping(value = "newContest", method = RequestMethod.POST)
   public UploadResult newContest(@RequestBody RawContestConfig contestConfig) throws IOException {
@@ -169,7 +167,7 @@ public class WebController {
    * to the client, trusting that it is actually well-formed JSON.)
    *
    * @param operatorName the operator's name
-   * @param contestId   the contest ID
+   * @param contestId    the contest ID
    */
   @RequestMapping(value = "tabulate", method = RequestMethod.GET,
     produces = MediaType.APPLICATION_JSON_VALUE)
@@ -201,6 +199,12 @@ public class WebController {
     response.setStatus(HttpStatus.ACCEPTED.value());
   }
 
+  /**
+   * Delete the given contest directory and its contents.
+   *
+   * @param contestDir the contest directory
+   * @throws IOException if there's a problem
+   */
   private void deleteContestDirectory(File contestDir) throws IOException {
     Files.walkFileTree(contestDir.toPath(), new SimpleFileVisitor<>() {
       @Override
@@ -220,7 +224,7 @@ public class WebController {
   /**
    * Return the canonical name for a contest config file in the given dir.
    *
-   * @param dir the directory, which will be included in the result
+   * @param dir       the directory, which will be included in the result
    * @param contestId the contest ID
    * @return the full, canonical name for the config file for the contest
    */
@@ -254,7 +258,7 @@ public class WebController {
   private ContestState checkContestExists(UUID contestId) throws IOException {
     final ContestState contestState = contestMap.get(contestId);
     if (contestState == null) {
-      throw new IOException("No such contest: "+ contestId);
+      throw new IOException("No such contest: " + contestId);
     }
     return contestState;
   }
@@ -262,13 +266,13 @@ public class WebController {
   /**
    * Check that we're expecting the chunk number we were given.
    *
-   * @param chunk the chunk number
+   * @param chunk        the chunk number
    * @param contestState the {@link ContestState}
    * @throws IOException if it's not the right chunk
    */
   private void checkExpectedChunk(int chunk, ContestState contestState) throws IOException {
     if (chunk != contestState.getNextUpload()) {
-      throw new IOException("Sent chunk "+ chunk +", expecting "+ contestState.getNextUpload());
+      throw new IOException("Sent chunk " + chunk + ", expecting " + contestState.getNextUpload());
     }
   }
 
@@ -277,41 +281,75 @@ public class WebController {
    */
   private static class ContestState {
 
+    /**
+     * The contest's unique ID, a random {@link UUID}.
+     */
     private final UUID contestId;
 
+    /**
+     * If we receive another chunk of data for this contest, we expect it to have this sequence number.
+     */
     private final AtomicInteger nextUpload;
 
+    /**
+     * The directory holding this contest's data.
+     */
     private final File directory;
 
+    /**
+     * Given a directory and contest ID, create a new {@link ContestState}.
+     *
+     * @param directory the directory that will hold the contest data
+     * @param contestId the contest ID
+     */
     public ContestState(File directory, UUID contestId) {
       nextUpload = new AtomicInteger(0);
       this.directory = directory;
       this.contestId = contestId;
     }
 
+    /**
+     * Return the contest's directory.
+     *
+     * @return the contest's directory
+     */
     public File getDirectory() {
       return directory;
     }
 
+    /**
+     * What sequence number should we expect for the next chunk?
+     *
+     * @return the sequence number we expect for the next chunk
+     */
     public int getNextUpload() {
       return nextUpload.get();
     }
 
+    /**
+     * Bump the expected sequence number by 1.
+     */
     public void incrementNextUpload() {
       nextUpload.addAndGet(1);
     }
 
+    /**
+     * Return the contest ID.
+     *
+     * @return the contest ID, a {@link UUID}.
+     */
     public UUID getContestId() {
       return contestId;
     }
   }
 
   /**
-   * The result of an upload.
+   * The result of an upload, which is returned to the caller.
    *
-   * @param contestId the contest ID
+   * @param contestId  the contest ID
    * @param nextUpload the index of the next expected upload
    */
-  public record UploadResult (UUID contestId, int nextUpload) { }
+  public record UploadResult(UUID contestId, int nextUpload) {
+  }
 
 }

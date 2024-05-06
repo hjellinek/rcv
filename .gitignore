@@ -95,3 +95,4 @@ fabric.properties
 # Other random IntelliJ config?
 .idea/misc.xml
 /contests/
+/javadoc/
