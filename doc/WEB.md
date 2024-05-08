@@ -1,6 +1,18 @@
 # How to run the Web application
 
-First open two terminals.
+## Install Java
+
+The PCTab project requires Java 20.  I suggest installing the full Java Development Kit (JDK) rather than
+the Java Runtime Environment (JRE).
+
+I am running [Amazon Corretto 20](https://github.com/corretto/corretto-20/releases), but anyone's JDK will work.
+[Bellsoft Liberica 20](https://bell-sw.com/pages/downloads/?version=java-20&os=macos) is another good choice.
+
+You only need to do this once.
+
+## Prepare to run the application
+
+Next, open two terminals.
 
 ## Build the JAR from source
 
