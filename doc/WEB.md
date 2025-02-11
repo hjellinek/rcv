@@ -2,7 +2,7 @@
 
 ## Install Java
 
-The PCTab project requires Java 20.  I suggest installing the full Java Development Kit (JDK) rather than
+The RCTab project requires Java 20.  I suggest installing the full Java Development Kit (JDK) rather than
 the Java Runtime Environment (JRE).
 
 I am running [Amazon Corretto 20](https://github.com/corretto/corretto-20/releases), but anyone's JDK will work.
